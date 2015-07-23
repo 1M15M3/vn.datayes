@@ -20,7 +20,7 @@ past 是一个从属于vn.trader的市场历史数据解决方案模块。主要
 
 **Tutorial**:
 
-* http://nbviewer.ipython.org/github/zedyang/vn.past-demo/blob/master/Tutorial.ipynb
+* http://nbviewer.ipython.org/github/zedyang/vn.past-demo/blob/master/Tutorial_demo.ipynb
 
 
 ---
