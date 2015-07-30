@@ -4,7 +4,6 @@ import time
 import json
 import psutil
 
-import tushare as ts
 import numpy as np
 import pandas as pd
 
