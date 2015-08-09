@@ -1,0 +1,59 @@
+<!-- History data main page -->
+
+{% extends "base.html" %}
+
+{% block title %}past{% endblock %}
+
+
+
+{% block content %}
+<div class="page-header">
+  <h2>History Data - Homepage</h1>
+</div>
+
+<ul class="nav nav-tabs">
+  <li role="presentation" class="active"><a href="#">Home</a></li>
+  <li role="presentation"><a href="#">Query</a></li>
+</ul>
+
+<br>
+
+<table id="table"></table>
+{% endblock %}
+
+
+{% block js %}
+{{ super() }}
+   <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.8.1/bootstrap-table.min.js"></script>
+
+   	<script type="text/javascript">
+		var cfig_json = {{ cfig|safe }}
+		var dbs = cfig_json.dbs
+
+		$('#table').bootstrapTable({
+				data : dbs,
+		    cardView: true,
+		    showColumns: true,
+		    search: true,
+		    columns: [
+		    {
+		        field: 'name',
+		        title: 'DB name'
+		    },
+		    {
+		        field: 'freq',
+		        title: 'Frequency',
+		        switchable: false
+		    },
+		    {
+		        field: 'data_range',
+		        title: 'Range',
+		    },
+		    {
+		        field: 'index',
+		        title: 'Index'
+		    }
+		  ],
+		});
+	</script>
+{% endblock %}
