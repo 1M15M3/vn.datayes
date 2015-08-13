@@ -13,6 +13,7 @@ fi
 echo [vn-past]: Configuration starts.
 
 python - << EOF
+
 from storage import *
 dc = DBConfig()
 api = PyApi(Config())
@@ -38,11 +39,23 @@ print '[MONGOD]: Index symbols collected.'
 
 mc._ensure_index()
 
-
 EOF
 
 echo [vn-past]: Configuration finished.
 echo [vn-past]: Current collection names: 
-
 cd ./names
 ls -l
+echo [API]: Prepare to download Bars {20130101, 20150801}...
+
+read -r -p "[API]: Confirm? [y/N] " response
+
+if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
+then
+	cd -
+	chmod +x download.sh
+	./download.sh
+
+else
+    echo [vn-past]: Finished.
+fi
+echo [vn-past]: Finished.
