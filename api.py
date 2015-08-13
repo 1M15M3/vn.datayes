@@ -260,7 +260,7 @@ class PyApi(object):
 
 	def __init__(self, config):
 		"""
-		Constructor. 
+		Constructor.
 
 		parameters
 		----------

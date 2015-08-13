@@ -117,8 +117,9 @@ class MongodController(object):
 				raise VNPAST_ConfigError(msg)
 
 		if self._connected:
-			self.__get_coll_names()
-			self.__ensure_index()
+			#self.__get_coll_names()
+			#self.__ensure_index()
+			pass
 
 
 	#----------------------------------------------------------------------
@@ -148,14 +149,14 @@ class MongodController(object):
 		return _md
 
 	@__md('names/equTicker.json')
-	def __allEquTickers(self):
+	def _allEquTickers(self):
 		""""""
 		data = self._api.get_equity_D1()
 		allEquTickers = list(data.body['ticker'])
 		return allEquTickers
 
 	@__md('names/secID.json')
-	def __allSecIds(self):
+	def _allSecIds(self):
 		""""""
 		data = self._api.get_equity_D1()
 		allTickers = list(data.body['ticker'])
@@ -165,41 +166,41 @@ class MongodController(object):
 		return allSecIds
 
 	@__md('names/futTicker.json')
-	def __allFutTickers(self):
+	def _allFutTickers(self):
 		""""""
 		data = self._api.get_future_D1()
 		allFutTickers = list(data.body['ticker'])
 		return allFutTickers
 
 	@__md('names/optTicker.json')
-	def __allOptTickers(self):
+	def _allOptTickers(self):
 		""""""
 		data = self._api.get_option_D1()
 		allOptTickers = list(data.body['ticker'])
 		return allOptTickers
 
 	@__md('names/fudTicker.json')
-	def __allFudTickers(self):
+	def _allFudTickers(self):
 		""""""
 		data = self._api.get_fund_D1()
 		allFudTickers = list(data.body['ticker'])
 		return allFudTickers
 
 	@__md('names/idxTicker.json')
-	def __allIdxTickers(self):
+	def _allIdxTickers(self):
 		""""""
 		data = self._api.get_index_D1()
 		allIdxTickers = list(data.body['ticker'])
 		return allIdxTickers
 
 	@__md('names/bndTicker.json')
-	def __allBndTickers(self):
+	def _allBndTickers(self):
 		""""""
 		data = self._api.get_bond_D1()
 		allBndTickers = list(data.body['ticker'])
 		return allBndTickers
 
-	def __get_coll_names(self):
+	def _get_coll_names(self):
 		"""
 
 		"""
@@ -207,12 +208,12 @@ class MongodController(object):
 			if not os.path.exists('names'):
 				os.makedirs('names')
 
-			self._collNames['equTicker'] = self.__allEquTickers()
-			self._collNames['fudTicker'] = self.__allFudTickers()
-			self._collNames['secID'] = self.__allSecIds()
-			self._collNames['futTicker'] = self.__allFutTickers()
-			self._collNames['optTicker'] = self.__allOptTickers()
-			self._collNames['idxTicker'] = self.__allIdxTickers()
+			self._collNames['equTicker'] = self._allEquTickers()
+			self._collNames['fudTicker'] = self._allFudTickers()
+			self._collNames['secID'] = self._allSecIds()
+			self._collNames['futTicker'] = self._allFutTickers()
+			self._collNames['optTicker'] = self._allOptTickers()
+			self._collNames['idxTicker'] = self._allIdxTickers()
 
 			print '[MONGOD]: Collection names gotten.'
 			return 1
@@ -228,7 +229,7 @@ class MongodController(object):
 	#----------------------------------------------------------------------
 	# Ensure collection index method.
 
-	def __ensure_index(self):
+	def _ensure_index(self):
 		"""
 
 		"""
@@ -319,7 +320,7 @@ class MongodController(object):
 		try:
 			# set databases and tickers
 			db = self._dbs['EQU_D1']['self']
-			allEquTickers = self.__allEquTickers()
+			allEquTickers = self._allEquTickers()
 			coll = db[allEquTickers[0]]
 
 			# find the latest timestamp in collection.
@@ -368,11 +369,47 @@ class MongodController(object):
 	#----------------------------------------------------------------------
 	# Fetch method.
 
+	def fetch(self, dbName, ticker, start, end, output='list'):
+		"""
+
+		"""
+		# check inputs' validity.
+		if output not in ['df', 'list', 'json']:
+			raise ValueError('[MONGOD]: Unsupported output type.')
+		if dbName not in self._dbNames:
+			raise ValueError('[MONGOD]: Unable to locate database name.')
+
+		db = self._dbs[dbName]
+		dbSelf = db['self']
+		dbIndex = db['index']
+		try:
+			coll = db[ticker]
+			if len(start)==8 and len(end)==8:
+				# yyyymmdd, len()=8
+				start = datetime.strptime(start, '%Y%m%d')
+				end = datetime.strptime(end, '%Y%m%d')
+			elif len(start)==14 and len(end)==14:
+				# yyyymmdd HH:MM, len()=14
+				start = datetime.strptime(start, '%Y%m%d %H:%M')
+				end = datetime.strptime(end, '%Y%m%d %H:%M')
+			else:
+				pass
+			docs = []
+
+			# find in MongoDB.
+			for doc in coll.find(filter={dbIndex: {'$lte': end,
+				'$gte': start}}, projection={'_id': False}):
+				docs.append(doc)
+
+			if output == 'list':
+				return docs[::-1]
+
+		except Exception, e:
+			msg = '[MONGOD]: Error encountered when fetching data' + \
+				  'from MongoDB; '+ str(e)
+			return -1
 
 
 
-#if __name__ == '__main__':
-#	dc = DBConfig()
-#	api = PyApi(Config())
-#	mm = MongodController(dc ,api)
-#	mm.download_equity_M1(['000001.XSHE','000002.XSHE','000010.XSHE'])
+
+
