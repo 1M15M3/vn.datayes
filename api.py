@@ -19,7 +19,7 @@ class Config(object):
 	"""
 	Json-like config object.
 
-	The Config() contains all kinds of settings and user info that 
+	The Config contains all kinds of settings and user info that 
 	could be useful in the implementation of Api wrapper.
 
 	privates
@@ -233,13 +233,12 @@ class PyApi(object):
 
 	privates
 	--------
-	* _config: Config() object; a container of all useful settings when making 
+	* _config: Config object; a container of all useful settings when making 
 	  requests.
 	* _ssl, _domain, _domain_stream, _version, _header, _account_id: 
 	  boolean, string, string, string, dictionary, integer;
 	  just private references to the items in Config. See the docs of Config().
-	* _session: requests.session() object.
-
+	* _session: requests.session object.
 
 
 	examples
@@ -377,7 +376,7 @@ class PyApi(object):
 		  ticker.exchange
 		* output: enumeration of strings; the format of output that will be 
 		  returned. default is 'df', optionals are:
-		  		- 'df': returns History() object, 
+		  		- 'df': returns History object, 
 		  			  where ret.body is a dataframe.
 		  		- 'list': returns a list of dictionaries.
 
@@ -452,7 +451,7 @@ class PyApi(object):
 
 		* output: enumeration of strings; the format of output that will be 
 		  returned. default is 'df', optionals are:
-		  		- 'df': returns History() object, 
+		  		- 'df': returns History object, 
 		  			  where ret.body is a dataframe.
 		  		- 'list': returns a list of dictionaries.
 
@@ -496,7 +495,7 @@ class PyApi(object):
 		pass
 
 	def get_bond_D1(self, field='', start='', end='', secID='',
-					ticker='', one=20150513):
+					ticker='', one=20150513, output='df'):
 		"""
 		Get 1-day interday bar data of one bond instrument.
 
@@ -525,11 +524,14 @@ class PyApi(object):
 
 		  Field is an optional parameter, default setting returns all fields.
 
-		* start, end, secID, ticker, one:
-		  string, string, string, string, string.
+		* start, end, secID, ticker, one, output
+		  string, string, string, string, string, string(enum)
 		  Same as above, reference: get_equity_D1().
 
 		"""
+		if start and end and ticker:
+			one = '' # while user specifies start/end, covers tradeDate.
+
 		url = '{}/{}/api/market/getMktBondd.json'.format(
 			   self._domain, self._version)
 		params = {
@@ -543,12 +545,15 @@ class PyApi(object):
 		try:
 			resp = self.__access(url=url, params=params)
 			assert len(resp.json()) > 0
-			data = History(resp.json())
+			if output == 'df':
+				data = History(resp.json())
+			elif output == 'list':
+				data = resp.json()['data']
 			return data
 		except AssertionError: return 0
 
 	def get_future_D1(self, field='', start='', end='', secID='',
-					ticker='', one=20150513):
+					ticker='', one=20150513, output='df'):
 		"""
 		Get 1-day interday bar data of one future contract.
 
@@ -583,10 +588,13 @@ class PyApi(object):
 
 		  Field is an optional parameter, default setting returns all fields.
 
-		* start, end, secID, ticker, one:
-		  string, string, string, string, string.
+		* start, end, secID, ticker, one, output
+		  string, string, string, string, string, string(enum)
 		  Same as above, reference: get_equity_D1().
 		"""
+		if start and end and ticker:
+			one = '' # while user specifies start/end, covers tradeDate.
+
 		url = '{}/{}/api/market/getMktFutd.json'.format(
 			   self._domain, self._version)
 		params = {
@@ -600,7 +608,10 @@ class PyApi(object):
 		try:
 			resp = self.__access(url=url, params=params)
 			assert len(resp.json()) > 0
-			data = History(resp.json())
+			if output == 'df':
+				data = History(resp.json())
+			elif output == 'list':
+				data = resp.json()['data']
 			return data
 		except AssertionError: return 0
 
@@ -612,7 +623,7 @@ class PyApi(object):
 		pass
 
 	def get_fund_D1(self, field='', start='', end='', secID='',
-					ticker='', one=20150513):
+					ticker='', one=20150513, output='df'):
 		"""
 		Get 1-day interday bar data of one mutual fund.
 
@@ -642,11 +653,14 @@ class PyApi(object):
 
 		  Field is an optional parameter, default setting returns all fields.
 
-		* start, end, secID, ticker, one:
-		  string, string, string, string, string.
+		* start, end, secID, ticker, one, output
+		  string, string, string, string, string, string(enum)
 		  Same as above, reference: get_equity_D1().
 
 		"""
+		if start and end and ticker:
+			one = '' # while user specifies start/end, covers tradeDate.
+
 		url = '{}/{}/api/market/getMktFundd.json'.format(
 			   self._domain, self._version)
 		params = {
@@ -660,12 +674,15 @@ class PyApi(object):
 		try:
 			resp = self.__access(url=url, params=params)
 			assert len(resp.json()) > 0
-			data = History(resp.json())
+			if output == 'df':
+				data = History(resp.json())
+			elif output == 'list':
+				data = resp.json()['data']
 			return data
 		except AssertionError: return 0
 
 	def get_index_D1(self, field='', start='', end='', indexID='',
-					 ticker='', one=20150513):
+					 ticker='', one=20150513, output='df'):
 		"""
 		Get 1-day interday bar data of one stock index.
 
@@ -693,11 +710,14 @@ class PyApi(object):
 
 		  Field is an optional parameter, default setting returns all fields.
 
-		* start, end, secID, ticker, one:
-		  string, string, string, string, string.
+		* start, end, secID, ticker, one, output
+		  string, string, string, string, string, string(enum)
 		  Same as above, reference: get_equity_D1().
 
 		"""
+		if start and end and ticker:
+			one = '' # while user specifies start/end, covers tradeDate.
+
 		url = '{}/{}/api/market/getMktIdxd.json'.format(
 			   self._domain, self._version)
 		params = {
@@ -711,12 +731,15 @@ class PyApi(object):
 		try:
 			resp = self.__access(url=url, params=params)
 			assert len(resp.json()) > 0
-			data = History(resp.json())
+			if output == 'df':
+				data = History(resp.json())
+			elif output == 'list':
+				data = resp.json()['data']
 			return data
 		except AssertionError: return 0
 
 	def get_option_D1(self, field='', start='', end='', secID='',
-					  optID='' ,ticker='', one=20150513):
+					  optID='' ,ticker='', one=20150513, output='df'):
 		"""
 		Get 1-day interday bar data of one option contact.
 
@@ -744,11 +767,14 @@ class PyApi(object):
 
 		  Field is an optional parameter, default setting returns all fields.
 
-		* start, end, secID, ticker, one:
-		  string, string, string, string, string.
+		* start, end, secID, ticker, one, output
+		  string, string, string, string, string, string(enum)
 		  Same as above, reference: get_equity_D1().
 
 		"""
+		if start and end and ticker:
+			one = '' # while user specifies start/end, covers tradeDate.
+
 		url = '{}/{}/api/market/getMktOptd.json'.format(
 			   self._domain, self._version)
 		params = {
@@ -763,7 +789,10 @@ class PyApi(object):
 		try:
 			resp = self.__access(url=url, params=params)
 			assert len(resp.json()) > 0
-			data = History(resp.json())
+			if output == 'df':
+				data = History(resp.json())
+			elif output == 'list':
+				data = resp.json()['data']
 			return data
 		except AssertionError: return 0
 
@@ -778,8 +807,8 @@ class PyApi(object):
 		* field: string; variables that are to be requested. 
 		  Field is an optional parameter, default setting returns all fields.
 
-		* start, end, secID, ticker, one:
-		  string, string, string, string, string.
+		* start, end, secID, ticker, one, output
+		  string, string, string, string, string, string(enum)
 		  Same as above, reference: get_equity_D1().
 		"""
 		url = '{}/{}/api/market/getStockFactorsDateRange.json'.format(
@@ -924,11 +953,344 @@ class PyApi(object):
 			return data
 		except AssertionError: return 0
 
+	def get_incomeStatement_bnk(self):
+		"""
+
+		"""
+		pass
+
+	def get_incomeStatement_sec(self):
+		"""
+
+		"""
+		pass
+
+	def get_incomeStatement_ins(self):
+		"""
+
+		"""
+		pass
+
+	def get_incomeStatement_ind(self):
+		"""
+
+		"""
+		pass
+
 	#----------------------------------------------------------------------
 	# multi-threading download for database storage.
 
-	def get_equity_D1_drudgery(self, id, db, 
-							   start, end, tasks=[]):
+	def __drugery(self, id, db, indexType,
+				  start, end, tasks, target):
+		"""
+		basic drudgery function.
+		This method loops over a list of tasks(tickers) and get data using
+		target api.get_# method for all those tickers.
+		A new feature 'date' or 'dateTime'(for intraday) will be automatically
+		added into every json-like documents, and specifies the datetime.
+		datetime() formatted date(time) mark. With the setting of MongoDB
+		in this module, this feature should be the unique index for all 
+		collections.
+
+		By programatically assigning creating and assigning tasks to drudgery
+		functions, multi-threading download of data can be achieved.
+
+		parameters
+		----------
+		* id: integer; the ID of Drudgery session.
+
+		* db: pymongo.db object; the database which collections of bars will
+		  go into.
+
+		* indexType: string(enum): 'date' or 'datetime', specifies what
+		  is the collection index formatted.
+
+		* start, end: string; Date mark formatted in 'YYYYMMDD'. Specifies the 
+		  start/end point of collections of bars.
+
+		* tasks: list of strings; the tickers that this drudgery function
+		  loops over.
+
+		* target: method; the api.get_# method that is to be called by 
+		  drudgery function.
+		"""
+		if len(tasks) == 0:
+			return 0
+
+		# str to datetime inline functions.
+		if indexType == 'date':
+			todt = lambda str_dt: datetime.strptime(str_dt,'%Y-%m-%d')
+			update_dt = lambda d: d.update({'date':todt(d['tradeDate'])})
+		elif indexType == 'datetime':
+			todt = lambda str_d, str_t: datetime.strptime(
+				str_d + ' ' + str_t,'%Y-%m-%d %H:%M')
+			update_dt = lambda d: d.update(
+				{'dateTime':todt(d['dataDate'], d['barTime'])})
+		else:
+			raise ValueError
+
+		# loop over all tickers in task list.
+		k, n = 1, len(tasks)
+		for ticker in tasks:
+			try:
+				data = target(start = start,
+							  end = end, 
+							  ticker = ticker,
+							  output = 'list')
+				assert len(data) >= 1
+				map(update_dt, data) # add datetime feature to docs.
+				coll = db[ticker]
+				coll.insert_many(data)
+				print '[API|Session{}]: '.format(id) + \
+					  'Finished {} in {}.'.format(k, n)
+				k += 1
+			except AssertionError:
+				msg = '[API|Session{}]: '.format(id) + \
+					  'Empty dataset in the response.'
+				print msg
+				pass
+			except Exception, e:
+				msg = '[API|Session{}]: '.format(id) + \
+					  'Exception encountered when ' + \
+					  'requesting data; ' + str(e)
+				print msg
+				pass
+
+	def get_equity_D1_drudgery(self, id, db, start, end, tasks=[]):
+		"""
+		call __drugery targeting at get_equity_D1()
+		"""
+		self.__drugery(id=id, db=db,
+					   indexType = 'date',
+					   start = start, 
+					   end = end, 
+					   tasks = tasks,
+					   target = self.get_equity_D1)
+
+	def get_future_D1_drudgery(self, id, db, start, end, tasks=[]):
+		"""
+		call __drugery targeting at get_future_D1()
+		"""
+		self.__drugery(id=id, db=db, 
+					   indexType = 'date',
+					   start = start, 
+					   end = end, 
+					   tasks = tasks,
+					   target = self.get_future_D1)
+
+	def get_index_D1_drudgery(self, id, db, start, end, tasks=[]):
+		"""
+		call __drugery targeting at get_index_D1()
+		"""
+		self.__drugery(id=id, db=db, 
+					   indexType = 'date',
+					   start = start, 
+					   end = end, 
+					   tasks = tasks,
+					   target = self.get_index_D1)
+
+	def get_bond_D1_drudgery(self, id, db, start, end, tasks=[]):
+		"""
+		call __drugery targeting at get_bond_D1()
+		"""
+		self.__drugery(id=id, db=db, 
+					   indexType = 'date',
+					   start = start, 
+					   end = end, 
+					   tasks = tasks,
+					   target = self.get_bond_D1)
+
+	def get_fund_D1_drudgery(self, id, db, start, end, tasks=[]):
+		"""
+		call __drugery targeting at get_fund_D1()
+		"""
+		self.__drugery(id=id, db=db, 
+					   indexType = 'date',
+					   start = start, 
+					   end = end, 
+					   tasks = tasks,
+					   target = self.get_fund_D1)
+
+	def get_option_D1_drudgery(self, id, db, start, end, tasks=[]):
+		"""
+		call __drugery targeting at get_option_D1()
+		"""
+		self.__drugery(id=id, db=db, 
+					   indexType = 'date',
+					   start = start, 
+					   end = end, 
+					   tasks = tasks,
+					   target = self.get_option_D1)
+
+	#----------------------------------------------------------------------
+
+	def __overlord(self, db, start, end, dName, 
+				   target1, target2, sessionNum):
+		"""
+		Basic controller of multithreading request.
+		Generates a list of all tickers, creates threads and distribute 
+		tasks to individual #_drudgery() functions.
+
+		parameters
+		----------
+		* db: pymongo.db object; the database which collections of bars will
+		  go into. Note that this database will be transferred to every 
+		  drudgery functions created by controller.
+
+		* start, end: string; Date mark formatted in 'YYYYMMDD'. Specifies the 
+		  start/end point of collections of bars.
+
+		* dName: string; the path of file where all tickers' infomation
+		  are stored in. 
+
+		* target1: method; targetting api method that overlord calls
+		  to get tasks list.
+
+		* target2: method; the corresponding drudgery function.
+
+		* sessionNum: integer; the number of threads that will be deploied.
+		  Concretely, the list of all tickers will be sub-divided into chunks,
+		  where chunkSize = len(allTickers)/sessionNum.
+
+		"""
+		if os.path.isfile(dName):
+			# if directory exists, read from it.
+			jsonFile = open(dName,'r')
+			allTickers = json.loads(jsonFile.read())
+			jsonFile.close()
+		else:
+			data = target1()
+			allTickers = list(data.body['ticker'])
+		
+		chunkSize = len(allTickers)/sessionNum
+		taskLists = [allTickers[k:k+chunkSize] for k in range(
+						0, len(allTickers), chunkSize)]
+		k = 0
+		for tasks in taskLists:
+			thrd = Thread(target = target2,
+						  args = (k, db, start, end, tasks))
+			thrd.start()
+			k += 1
+		return 1
+
+	def get_equity_D1_mongod(self, db, start, end, sessionNum=30):
+		"""
+		Controller of get equity D1 method.
+		"""
+		self.__overlord(db = db,
+						start = start,
+						end = end,
+						dName = 'names/equTicker.json',
+						target1 = self.get_equity_D1,
+						target2 = self.get_equity_D1_drudgery,
+						sessionNum = sessionNum)
+
+	def get_future_D1_mongod(self, db, start, end, sessionNum=30):
+		"""
+		Controller of get future D1 method.
+		"""
+		self.__overlord(db = db,
+						start = start,
+						end = end,
+						dName = 'names/futTicker.json',
+						target1 = self.get_future_D1,
+						target2 = self.get_future_D1_drudgery,
+						sessionNum = sessionNum)
+
+	def get_index_D1_mongod(self, db, start, end, sessionNum=30):
+		"""
+		Controller of get index D1 method.
+		"""
+		self.__overlord(db = db,
+						start = start,
+						end = end,
+						dName = 'names/idxTicker.json',
+						target1 = self.get_index_D1,
+						target2 = self.get_index_D1_drudgery,
+						sessionNum = sessionNum)
+
+	def get_bond_D1_mongod(self, db, start, end, sessionNum=30):
+		"""
+		Controller of get bond D1 method.
+		"""
+		self.__overlord(db = db,
+						start = start,
+						end = end,
+						dName = 'names/bndTicker.json',
+						target1 = self.get_bond_D1,
+						target2 = self.get_bond_D1_drudgery,
+						sessionNum = sessionNum)
+
+	def get_fund_D1_mongod(self, db, start, end, sessionNum=30):
+		"""
+		Controller of get fund D1 method.
+		"""
+		self.__overlord(db = db,
+						start = start,
+						end = end,
+						dName = 'names/fudTicker.json',
+						target1 = self.get_fund_D1,
+						target2 = self.get_fund_D1_drudgery,
+						sessionNum = sessionNum)
+
+	def get_option_D1_mongod(self, db, start, end, sessionNum=30):
+		"""
+		Controller of get option D1 method.
+		"""
+		self.__overlord(db = db,
+						start = start,
+						end = end,
+						dName = 'names/optTicker.json',
+						target1 = self.get_option_D1,
+						target2 = self.get_option_D1_drudgery,
+						sessionNum = sessionNum)
+
+	def get_equity_D1_mongod_(self, db, start, end, sessionNum=30):
+		"""
+		Outer controller of get equity D1 method. 
+		Generates a list of all tickers, creates threads and distribute 
+		tasks to individual get_equity_D1_drudgery() functions.
+
+		parameters
+		----------
+		* db: pymongo.db object; the database which collections of bars will
+		  go into. Note that this database will be transferred to every 
+		  drudgery functions created by controller.
+		* start, end: string; Date mark formatted in 'YYYYMMDD'. Specifies the 
+		  start/end point of collections of bars.
+		* sessionNum: integer; the number of threads that will be deploied.
+		  Concretely, the list of all tickers will be sub-divided into chunks,
+		  where chunkSize = len(allTickers)/sessionNum.
+
+		"""
+		# initialize task list.
+		dName = 'names/equTicker.json'
+		if os.path.isfile(dName):
+			# if directory exists, read from it.
+			jsonFile = open(dName,'r')
+			allTickers = json.loads(jsonFile.read())
+			jsonFile.close()
+		else:
+			data = self.get_equity_D1()
+			allTickers = list(data.body['ticker'])
+			
+		chunkSize = len(allTickers)/sessionNum
+		taskLists = [allTickers[k:k+chunkSize] for k in range(
+						0, len(allTickers), chunkSize)]
+		k = 0
+		for tasks in taskLists:
+			thrd = Thread(target = self.get_equity_D1_drudgery,
+						  args = (k, db, start, end, tasks))
+			thrd.start()
+			k += 1
+		return 1
+
+
+	#----------------------------------------------------------------------#
+	# to be deprecated
+
+	def get_equity_D1_drudgery_(self, id, db, 
+							    start, end, tasks=[]):
 		"""
 		Drudgery function of getting equity_D1 bars.
 		This method loops over a list of tasks(tickers) and get D1 bar
@@ -989,7 +1351,7 @@ class PyApi(object):
 				print msg
 				pass
 
-	def get_equity_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_equity_D1_mongod_(self, db, start, end, sessionNum=30):
 		"""
 		Outer controller of get equity D1 method. 
 		Generates a list of all tickers, creates threads and distribute 
@@ -1024,73 +1386,6 @@ class PyApi(object):
 		k = 0
 		for tasks in taskLists:
 			thrd = Thread(target = self.get_equity_D1_drudgery,
-						  args = (k, db, start, end, tasks))
-			thrd.start()
-			k += 1
-		return 1
-
-	def get_future_D1_drudgery(self, id, db, 
-							   start, end, tasks=[]):
-		"""
-		Drudgery function of getting future_D1 bars.
-		"""
-		if len(tasks) == 0:
-			return 0
-		# str to datetime inline functions.
-		todt = lambda str_dt: datetime.strptime(str_dt,'%Y-%m-%d')
-		update_dt = lambda d: d.update({'date':todt(d['tradeDate'])})
-		# loop over all tickers in task list.
-		k, n = 1, len(tasks)
-		for ticker in tasks:
-			try:
-				data = self.get_future_D1(start = start,
-										  end = end, 
-										  ticker = ticker,
-										  output = 'list')
-				assert len(data) >= 1
-				map(update_dt, data) # add datetime feature to docs.
-				coll = db[ticker]
-				coll.insert_many(data)
-				print '[API|Session{}]: '.format(id) + \
-					  'Finished {} in {}.'.format(k, n)
-				k += 1
-			except ConnectionError:
-			# If choke connection, standby for 1sec an invoke again.
-				time.sleep(1)
-				self.get_equity_D1_drudgery(
-					 id, db, start, end, tasks)
-			except AssertionError:
-				msg = '[API|Session{}]: '.format(id) + \
-					  'Empty dataset in the response.'
-				print msg
-				pass
-			except Exception, e:
-				msg = '[API|Session{}]: '.format(id) + \
-					  'Exception encountered when ' + \
-					  'requesting data; ' + str(e)
-				print msg
-				pass
-
-	def get_future_D1_mongod(self, db, start, end, sessionNum=30):
-		"""
-		Outer controller of get future D1 method. 
-		"""
-		# initialize task list.
-		dName = 'names/futTicker.json'
-		if os.path.isfile(dName):
-			# if directory exists, read from it.
-			jsonFile = open(dName,'r')
-			allTickers = json.loads(jsonFile.read())
-			jsonFile.close()
-		else:
-			data = self.get_equity_D1()
-			allTickers = list(data.body['ticker'])
-		chunkSize = len(allTickers)/sessionNum
-		taskLists = [allTickers[k:k+chunkSize] for k in range(
-						0, len(allTickers), chunkSize)]
-		k = 0
-		for tasks in taskLists:
-			thrd = Thread(target = self.get_future_D1_drudgery,
 						  args = (k, db, start, end, tasks))
 			thrd.start()
 			k += 1

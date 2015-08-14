@@ -41,55 +41,20 @@ print '[MONGOD]: Index symbols collected.'
 
 mc._ensure_index()
 
-dbName = 'EQU_D1'
-collNames =  mc._dbs['EQU_D1']['self'].collection_names()
-colls = [mc._dbs[dbName]['self'][name] for name in collNames]
-counts = [coll.count() for coll in colls]
-
-view = pd.DataFrame({'collections':collNames,
-					 'counts': counts})
-
-print '[MONGOD]: View collections.tail() in {}.'.format(dbName)
-print view.tail()
-
-if view['counts'][0] >= 1:
-	isOldDb = 1
-else:
-	isOldDb = 0
-
-view.to_csv('./config/db_EQU_D1.csv')
-
 EOF
 
-export IFS=","
-cat ./config/db_EQU_D1.csv | head -n 2 | tail -n 1 | while read ind ticker count; do : ; done
 
 echo [vn-past]: Configuration finished.
-echo [vn-past]: Current collection names: 
+echo [vn-past]: Selected databases: 
 cd ./names
 ls -l
 
-if [[ $count > 0 ]]
-then
-	echo [API]: Unintialized database detected.
-	echo [API]: Prepare to download Bars {20130101, 20150801}...
+echo [vn-past]: Prepare to construct[c]/update[u] databases...
 
-	read -r -p "[API]: Confirm? [y/N] " response
-	if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
-	then
-		cd -
-		chmod +x download.sh
-		./download.sh
-
-	else
-	    echo [vn-past]: Do not download.
-	    :
-	fi
-
-else
-	echo [API]: Database initialized.
-	echo [API]: Prepare to update Bars till latest trading date...
-
+read -r -p "[vn-past]: Waiting for orders[c/u]: " response
+if [[ $response =~ ^([uU][pP][dD][aA][tT][eE]|[uU])$ ]]
+then 
+	echo [API]: Prepare to update data...
 	read -r -p "[API]: Confirm? [y/N] " response
 	if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
 	then
@@ -99,6 +64,20 @@ else
 
 	else
 	    echo [vn-past]: Do not update.
+	    :
+	fi
+
+else
+	echo [API]: Prepare to download Bars...
+	read -r -p "[API]: Confirm? [y/N] " response
+	if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
+	then
+		cd -
+		chmod +x download.sh
+		./download.sh
+
+	else
+	    echo [vn-past]: Do not download.
 	    :
 	fi
 fi
