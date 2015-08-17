@@ -58,54 +58,54 @@ Mac OS X 10.10; Windows 7 || Anaconda.Python 2.7
 ###2.2 数据库初始化与下载
 * **api.Config** 对象包含了向API进行数据请求所需的信息，我们需要一个用户token来初始化这个对象。
 
-```
-    from storage import *
-    
-    myConfig = Config(head="Zed's Config", 
-                      token='7c2e59e212dbff90ffd6b382c7afb57bc987a99307d382b058af6748f591d723')
-    myConfig.body
+```python
+from storage import *
+
+myConfig = Config(head="Zed's Config", 
+                  token='7c2e59e212dbff90ffd6b382c7afb57bc987a99307d382b058af6748f591d723')
+myConfig.body
 ```
 
 
 ```
-    {'domain': 'api.wmcloud.com/data',
-     'header': {'Authorization': 'Bearer 7c2e59e212dbff90ffd6b382c7afb57bc987a99307d382b058af6748f591d723',
-      'Connection': 'keep-alive'},
-     'ssl': False,
-     'version': 'v1'}
+{'domain': 'api.wmcloud.com/data',
+ 'header': {'Authorization': 'Bearer 7c2e59e212dbff90ffd6b382c7afb57bc987a99307d382b058af6748f591d723',
+            'Connection': 'keep-alive'},
+ 'ssl': False,
+ 'version': 'v1'}
 ```
 
 
 
 * **storage.DBConfig** 对象包含了数据库配置。我们需要自己编写一个json字典来填充这个对象。举例来说，我们希望下载股票日线数据和指数日线数据，数据库名称为DATAYES_EQUITY_D1和DATAYES_INDEX_D1，index为日期“date”。那么json字典是这样的：
 
-```
-    client = pymongo.MongoClient() # pymongo.connection object.
-    
-    body = {
-        'client': client, # connection object.
-        'dbs': {
-            'EQU_D1': {                              # in-python alias: 'EQU_D1'
-                'self': client['DATAYES_EQUITY_D1'], # pymongo.database[name] object.
-                'index': 'date',                     # index name.
-                'collNames': 'equTicker'             # what are collection names consist of.
-            },
-            'IDX_D1': {                              # Another database
-                'self': client['DATAYES_INDEX_D1'],
-                'index': 'date',
-                'collNames': 'idxTicker'
-            }
+```python
+client = pymongo.MongoClient() # pymongo.connection object.
+
+body = {
+    'client': client, # connection object.
+    'dbs': {
+        'EQU_D1': {                              # in-python alias: 'EQU_D1'
+            'self': client['DATAYES_EQUITY_D1'], # pymongo.database[name] object.
+            'index': 'date',                     # index name.
+            'collNames': 'equTicker'             # what are collection names consist of.
         },
-        'dbNames': ['EQU_D1','IDX_D1']               # List of alias.
-    }
-    
-    myDbConfig_ = DBConfig(body=body)
-    
-    # 这看上去有些麻烦；不想这么做的话可以直接使用DBConfig的默认构造函数。
-    
-    myDbConfig = DBConfig()
-    
-    myDbConfig.body
+        'IDX_D1': {                              # Another database
+            'self': client['DATAYES_INDEX_D1'],
+            'index': 'date',
+            'collNames': 'idxTicker'
+        }
+    },
+    'dbNames': ['EQU_D1','IDX_D1']               # List of alias.
+}
+
+myDbConfig_ = DBConfig(body=body)
+
+# 这看上去有些麻烦；不想这么做的话可以直接使用DBConfig的默认构造函数。
+
+myDbConfig = DBConfig()
+
+myDbConfig.body
 ```
 
 
@@ -136,12 +136,12 @@ Mac OS X 10.10; Windows 7 || Anaconda.Python 2.7
 
 * **api.PyApi**是向网络数据源进行请求的主要对象。**storage.MongodController**是进行数据库管理的对象。当我们完成了配置对象的构造，即可初始化PyApi与MongodController。**MongodController._get_coll_names()** 和**MongodController._ensure_index()** 是数据库初始化所调用的方法，为了模块开发的方便，它们暂时没有被放进构造函数中自动执行。
 
-```
-    myApi = PyApi(myConfig) # construct PyApi object.
-    mc = MongodController(api=myApi, config=myDbConfig) # construct MongodController object, 
-                                                        # on the top of PyApi.
-    mc._get_coll_names()    # get names of collections.
-    mc._ensure_index()      # ensure collection indices.
+```python
+myApi = PyApi(myConfig) # construct PyApi object.
+mc = MongodController(api=myApi, config=myDbConfig) # construct MongodController object, 
+                                                    # on the top of PyApi.
+mc._get_coll_names()    # get names of collections.
+mc._ensure_index()      # ensure collection indices.
 ```
 ```
     [MONGOD]: Collection names gotten.
@@ -155,15 +155,16 @@ Mac OS X 10.10; Windows 7 || Anaconda.Python 2.7
 
 * 使用**MongodController.download#()**方法进行下载。
 
-
+```python
     mc.download_index_D1('20150101','20150801')
+```
 
 ![fig3](static/figs/fig3.png)
 
 ###2.3 数据库更新
 * 使用**MongodController.update#()**方法进行更新。脚本会自动寻找数据库中的最后一日并更新至最新交易日。
 
-```
+```python
     from datetime import datetime
     datetime.now()
 ```
@@ -174,7 +175,7 @@ Mac OS X 10.10; Windows 7 || Anaconda.Python 2.7
 ```
 
 
-```
+```python
     mc.update_index_D1()
 ```
 
