@@ -1,6 +1,9 @@
 
 #VN.DATAYES - Welcome!
 
+##0. Tutorial - ipythonNotebook
+http://nbviewer.ipython.org/github/zedyang/vn.past-demo/blob/master/static/tutorial.ipynb
+
 ##1. Preface
 
 ###1.1
