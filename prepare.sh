@@ -10,14 +10,14 @@ if [ ! -d $dir_c ]; then
 	mkdir $dir_c
 fi
 
-echo [vn-past]: Configuration starts.
+echo '[vn-past]: Configuration starts.'
 
 python - << EOF
 
 from storage import *
 import pandas as pd
 import os
-dc = DBConfig()
+dc = MongodConfig()
 api = PyApi(Config())
 mc = MongodController(dc, api)
 

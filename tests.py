@@ -1,4 +1,5 @@
 from api import *
+from storage import *
 
 def test_config():
 	cfig = Config()
@@ -98,6 +99,19 @@ def test_mktbar_M1_get_interM():
 	db = c['test_dy_m1']
 	api = PyApi(Config())
 	api.get_equity_M1_interMonth(db=db, id=0, tasks=['000001.XSHE','000002.XSHE'])
+
+def test_sqlite():
+	"""
+	test for sqlite storage.
+	"""
+	api = PyApi(Config())
+	cf = SqliteConfig()
+	db = cf.body['dbs']['IDX_D1']['self']
+	api.get_index_D1_overlord(db = db,
+							   option = 'sqlite',
+							   start = '20150101', 
+							   end = '20150801',
+							   sessionNum = 1)
 
 if __name__ == '__main__':
 	#test_config()

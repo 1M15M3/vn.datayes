@@ -4,12 +4,14 @@ import json
 import time
 import requests
 import pymongo
+import sqlalchemy
 import pandas as pd
 
 from datetime import datetime, timedelta
 from Queue import Queue, Empty
 from threading import Thread, Timer
 from pymongo import MongoClient
+from sqlalchemy import create_engine
 
 from requests.exceptions import ConnectionError
 from errors import (VNPAST_ConfigError, VNPAST_RequestError,
@@ -153,6 +155,19 @@ class History(BaseDataContainer):
 			msg = '[{}]: Unable to construct history data; '.format(
 					self.head) + str(e)
 			raise VNPAST_DataConstructorError(msg)
+
+	def to_sqlite(self, engine, tableName, index, ifExists):
+		"""
+
+
+		"""
+		self.body.to_sql(tableName, 
+				  		 engine,
+				  		 flavor = 'sqlite', 
+				  		 if_exists = ifExists, 
+				  		 index = False, 
+				  		 index_label = index)
+		return 1
 
 class Bar(History):
 	"""
@@ -980,7 +995,7 @@ class PyApi(object):
 	#----------------------------------------------------------------------
 	# multi-threading download for database storage.
 
-	def __drugery(self, id, db, indexType,
+	def __drugery(self, id, db, indexType, option,
 				  start, end, tasks, target):
 		"""
 		basic drudgery function.
@@ -988,9 +1003,9 @@ class PyApi(object):
 		target api.get_# method for all those tickers.
 		A new feature 'date' or 'dateTime'(for intraday) will be automatically
 		added into every json-like documents, and specifies the datetime.
-		datetime() formatted date(time) mark. With the setting of MongoDB
+		datetime() formatted date(time) mark. With the setting of databases
 		in this module, this feature should be the unique index for all 
-		collections.
+		collections/tables.
 
 		By programatically assigning creating and assigning tasks to drudgery
 		functions, multi-threading download of data can be achieved.
@@ -999,11 +1014,14 @@ class PyApi(object):
 		----------
 		* id: integer; the ID of Drudgery session.
 
-		* db: pymongo.db object; the database which collections of bars will
-		  go into.
+		* db: pymongo.db object/sqlalchemy.engine.base.Engine object
+		  the mongod/sqlite database which collections of bars will go into.
 
 		* indexType: string(enum): 'date' or 'datetime', specifies what
-		  is the collection index formatted.
+		  is the collection/table index formatted in.
+
+		* option: string(enum): 'mongod' or 'sqlite'; specifies database
+		  flavor.
 
 		* start, end: string; Date mark formatted in 'YYYYMMDD'. Specifies the 
 		  start/end point of collections of bars.
@@ -1039,8 +1057,18 @@ class PyApi(object):
 							  output = 'list')
 				assert len(data) >= 1
 				map(update_dt, data) # add datetime feature to docs.
-				coll = db[ticker]
-				coll.insert_many(data)
+
+				# Write into database.
+				if option == 'mongod':
+					coll = db[ticker]
+					coll.insert_many(data)
+				elif option == 'sqlite':
+					data = {'data': data}
+					# wrap data to pass construction check of History. 
+					history = History(data)
+					history.to_sqlite(engine = db, tableName = 't_'+ticker, 
+						index = indexType, ifExists = 'append')
+
 				print '[API|Session{}]: '.format(id) + \
 					  'Finished {} in {}.'.format(k, n)
 				k += 1
@@ -1056,66 +1084,66 @@ class PyApi(object):
 				print msg
 				pass
 
-	def get_equity_D1_drudgery(self, id, db, start, end, tasks=[]):
+	def get_equity_D1_drudgery(self, id, db, option, start, end, tasks=[]):
 		"""
 		call __drugery targeting at get_equity_D1()
 		"""
-		self.__drugery(id=id, db=db,
+		self.__drugery(id=id, db=db, option=option,
 					   indexType = 'date',
 					   start = start, 
 					   end = end, 
 					   tasks = tasks,
 					   target = self.get_equity_D1)
 
-	def get_future_D1_drudgery(self, id, db, start, end, tasks=[]):
+	def get_future_D1_drudgery(self, id, db, option, start, end, tasks=[]):
 		"""
 		call __drugery targeting at get_future_D1()
 		"""
-		self.__drugery(id=id, db=db, 
+		self.__drugery(id=id, db=db, option=option,
 					   indexType = 'date',
 					   start = start, 
 					   end = end, 
 					   tasks = tasks,
 					   target = self.get_future_D1)
 
-	def get_index_D1_drudgery(self, id, db, start, end, tasks=[]):
+	def get_index_D1_drudgery(self, id, db, option, start, end, tasks=[]):
 		"""
 		call __drugery targeting at get_index_D1()
 		"""
-		self.__drugery(id=id, db=db, 
+		self.__drugery(id=id, db=db, option=option,
 					   indexType = 'date',
 					   start = start, 
 					   end = end, 
 					   tasks = tasks,
 					   target = self.get_index_D1)
 
-	def get_bond_D1_drudgery(self, id, db, start, end, tasks=[]):
+	def get_bond_D1_drudgery(self, id, db, option, start, end, tasks=[]):
 		"""
 		call __drugery targeting at get_bond_D1()
 		"""
-		self.__drugery(id=id, db=db, 
+		self.__drugery(id=id, db=db, option=option,
 					   indexType = 'date',
 					   start = start, 
 					   end = end, 
 					   tasks = tasks,
 					   target = self.get_bond_D1)
 
-	def get_fund_D1_drudgery(self, id, db, start, end, tasks=[]):
+	def get_fund_D1_drudgery(self, id, db, option, start, end, tasks=[]):
 		"""
 		call __drugery targeting at get_fund_D1()
 		"""
-		self.__drugery(id=id, db=db, 
+		self.__drugery(id=id, db=db, option=option,
 					   indexType = 'date',
 					   start = start, 
 					   end = end, 
 					   tasks = tasks,
 					   target = self.get_fund_D1)
 
-	def get_option_D1_drudgery(self, id, db, start, end, tasks=[]):
+	def get_option_D1_drudgery(self, id, db, option, start, end, tasks=[]):
 		"""
 		call __drugery targeting at get_option_D1()
 		"""
-		self.__drugery(id=id, db=db, 
+		self.__drugery(id=id, db=db, option=option,
 					   indexType = 'date',
 					   start = start, 
 					   end = end, 
@@ -1124,7 +1152,7 @@ class PyApi(object):
 
 	#----------------------------------------------------------------------
 
-	def __overlord(self, db, start, end, dName, 
+	def __overlord(self, db, option, start, end, dName, 
 				   target1, target2, sessionNum):
 		"""
 		Basic controller of multithreading request.
@@ -1133,9 +1161,13 @@ class PyApi(object):
 
 		parameters
 		----------
-		* db: pymongo.db object; the database which collections of bars will
+		* db: pymongo.db/sqlalchemy.engine.base.Engine object; 
+		  the database which collections/tables of bars will
 		  go into. Note that this database will be transferred to every 
 		  drudgery functions created by controller.
+
+		* option: string(enum): 'mongod' or 'sqlite'; specifies database
+		  flavor.
 
 		* start, end: string; Date mark formatted in 'YYYYMMDD'. Specifies the 
 		  start/end point of collections of bars.
@@ -1168,16 +1200,17 @@ class PyApi(object):
 		k = 0
 		for tasks in taskLists:
 			thrd = Thread(target = target2,
-						  args = (k, db, start, end, tasks))
+						  args = (k, db, option, start, end, tasks))
 			thrd.start()
 			k += 1
 		return 1
 
-	def get_equity_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_equity_D1_overlord(self, db, option, start, end, sessionNum=30):
 		"""
 		Controller of get equity D1 method.
 		"""
 		self.__overlord(db = db,
+						option = option,
 						start = start,
 						end = end,
 						dName = 'names/equTicker.json',
@@ -1185,11 +1218,12 @@ class PyApi(object):
 						target2 = self.get_equity_D1_drudgery,
 						sessionNum = sessionNum)
 
-	def get_future_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_future_D1_overlord(self, db, option, start, end, sessionNum=30):
 		"""
 		Controller of get future D1 method.
 		"""
 		self.__overlord(db = db,
+						option = option,
 						start = start,
 						end = end,
 						dName = 'names/futTicker.json',
@@ -1197,11 +1231,12 @@ class PyApi(object):
 						target2 = self.get_future_D1_drudgery,
 						sessionNum = sessionNum)
 
-	def get_index_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_index_D1_overlord(self, db, option, start, end, sessionNum=30):
 		"""
 		Controller of get index D1 method.
 		"""
 		self.__overlord(db = db,
+						option = option,
 						start = start,
 						end = end,
 						dName = 'names/idxTicker.json',
@@ -1209,11 +1244,12 @@ class PyApi(object):
 						target2 = self.get_index_D1_drudgery,
 						sessionNum = sessionNum)
 
-	def get_bond_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_bond_D1_overlord(self, db, option, start, end, sessionNum=30):
 		"""
 		Controller of get bond D1 method.
 		"""
 		self.__overlord(db = db,
+						option = option,
 						start = start,
 						end = end,
 						dName = 'names/bndTicker.json',
@@ -1221,11 +1257,12 @@ class PyApi(object):
 						target2 = self.get_bond_D1_drudgery,
 						sessionNum = sessionNum)
 
-	def get_fund_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_fund_D1_overlord(self, db, option, start, end, sessionNum=30):
 		"""
 		Controller of get fund D1 method.
 		"""
 		self.__overlord(db = db,
+						option = option,
 						start = start,
 						end = end,
 						dName = 'names/fudTicker.json',
@@ -1233,17 +1270,21 @@ class PyApi(object):
 						target2 = self.get_fund_D1_drudgery,
 						sessionNum = sessionNum)
 
-	def get_option_D1_mongod(self, db, start, end, sessionNum=30):
+	def get_option_D1_overlord(self, db, option, start, end, sessionNum=30):
 		"""
 		Controller of get option D1 method.
 		"""
 		self.__overlord(db = db,
+						option = option,
 						start = start,
 						end = end,
 						dName = 'names/optTicker.json',
 						target1 = self.get_option_D1,
 						target2 = self.get_option_D1_drudgery,
 						sessionNum = sessionNum)
+
+	#----------------------------------------------------------------------
+	# Deprecated stuffs
 
 	def get_equity_D1_mongod_(self, db, start, end, sessionNum=30):
 		"""
@@ -1558,4 +1599,3 @@ class PyApi(object):
 		return 1
 		"""
 		pass
-		

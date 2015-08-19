@@ -1,6 +1,7 @@
 import os
 import json
 import pymongo
+import sqlalchemy
 import pandas as pd
 
 from datetime import datetime, timedelta
@@ -10,11 +11,14 @@ from api import BaseDataContainer, History, Bar
 from errors import (VNPAST_ConfigError, VNPAST_RequestError,
 VNPAST_DataConstructorError, VNPAST_DatabaseError)
 
-class DBConfig(Config):
-	"""
-	Json-like config object; inherits from Config()
+#----------------------------------------------------------------------
+# Database Config objects.
 
-	Contains all kinds of settings relating to database settings.
+class MongodConfig(Config):
+	"""
+	Json-like MongoDB config object; inherits from Config()
+
+	Contains all kinds of settings relating to MongoDB settings.
 
 	privates
 	--------
@@ -50,7 +54,7 @@ class DBConfig(Config):
 			- dbNames: list; a list of database alias.
 
 	"""
-	head = 'DB config'
+	head = 'mongod'
 
 	client = pymongo.MongoClient()
 	body = {
@@ -101,7 +105,81 @@ class DBConfig(Config):
 		* token: string; user's token.
 		* body: dictionary; the main content of config
 		"""
-		super(DBConfig, self).__init__(head, token, body)
+		super(MongodConfig, self).__init__(head, token, body)
+
+	def view(self):
+		""" Reloaded Prettify printing method. """
+		config_view = {
+			'dbConfig_head' : self.head,
+			'dbConfig_body' : str(self.body),
+		}
+		print json.dumps(config_view, 
+						 indent=4, 
+						 sort_keys=True)
+
+#----------------------------------------------------------------------
+
+class SqliteConfig(Config):
+	"""
+
+	"""
+	head = 'sqlite'
+	folder = 'sqlite'
+
+	body = {
+		'dbs': {
+			'EQU_M1': {
+				'self': sqlalchemy.create_engine(
+					'sqlite:///%s/DATAYES_EQUITY_M1.db' % folder),
+				'index': 'dateTime',
+				'collNames': 'secID'
+			},
+			'EQU_D1': {
+				'self': sqlalchemy.create_engine(
+					'sqlite:///%s/DATAYES_EQUITY_D1.db' % folder),
+				'index': 'date',
+				'collNames': 'equTicker'
+			},
+			'FUT_D1': {
+				'self': sqlalchemy.create_engine(
+					'sqlite:///%s/DATAYES_FUTURE_D1.db' % folder),
+				'index': 'date',
+				'collNames': 'futTicker'
+			},
+			'OPT_D1': {
+				'self': sqlalchemy.create_engine(
+					'sqlite:///%s/DATAYES_OPTION_D1.db' % folder),
+				'index': 'date',
+				'collNames': 'optTicker'
+			},
+			'FUD_D1': {
+				'self': sqlalchemy.create_engine(
+					'sqlite:///%s/DATAYES_FUND_D1.db' % folder),
+				'index': 'date',
+				'collNames': 'fudTicker'
+			},
+			'IDX_D1': {
+				'self': sqlalchemy.create_engine(
+					'sqlite:///%s/DATAYES_INDEX_D1.db' % folder),
+				'index': 'date',
+				'collNames': 'idxTicker'
+			}
+		},
+		'dbNames': ['EQU_M1', 'EQU_D1', 'FUT_D1', 
+					'OPT_D1', 'FUD_D1', 'IDX_D1']
+	}
+
+	def __init__(self, head=None, token=None, body=None):
+		""" 
+		Inherited constructor. 
+
+		parameters
+		----------
+		* head: string; the name of config file. Default is None.
+		* token: string; user's token.
+		* body: dictionary; the main content of config
+		"""
+		super(SqliteConfig, self).__init__(head, token, body)
 
 	def view(self):
 		""" Reloaded Prettify printing method. """
@@ -120,7 +198,7 @@ class MongodController(object):
 	"""
 	The MongoDB controller interface.
 
-	MongodController is initialized with a DBConfig configuration
+	MongodController is initialized with a MongodConfig configuration
 	object and a PyApi object, which has already been contructed with
 	its own Config json. The default version of constructor actually
 	does nothing special about the database. Yet if user executes shell
@@ -129,7 +207,7 @@ class MongodController(object):
 	in corresponding databases. This process is done one database by another,
 	user can skip useless databases by editing the scripts.
 	Then, it ensures the index of each collection due to the 'index' value
-	in DBConfig.body.dbs. Concretely, for D1 bars, the index will be 'date',
+	in MongodConfig.body.dbs. Concretely, for D1 bars, the index will be 'date',
 	and for intraday bars, it will be 'dateTime'; both take the form of 
 	datetime.datetime timestamp.
 
@@ -141,7 +219,7 @@ class MongodController(object):
 
 	privates
 	--------
-	* _config: DBConfig object; a container of all useful settings for the
+	* _config: MongodConfig object; a container of all useful settings for the
 	  databases.
 
 	* _api: PyApi object; is responsible for making requests.
@@ -169,7 +247,7 @@ class MongodController(object):
 	example
 	-------
 	>> myApi = PyApi(Config())
-	>> mydbs = DBConfig()
+	>> mydbs = MongodConfig()
 	>> controller = MongodController(mydbs, myApi)
 	>> controller._get_coll_names()
 	>> controller._ensure_index()
@@ -177,7 +255,7 @@ class MongodController(object):
 	>> controller.update_equity_D1()
 
 	"""
-	_config = DBConfig()
+	_config = MongodConfig()
 	_api = None
 
 	_client = None
@@ -194,7 +272,7 @@ class MongodController(object):
 
 		parameters
 		----------
-		* config: DBConfig object; specifies database configs.
+		* config: MongodConfig object; specifies database configs.
 		* api: PyApi object.
 
 		"""
@@ -386,7 +464,8 @@ class MongodController(object):
 		"""
 		try:
 			db = self._dbs['EQU_D1']['self']
-			self._api.get_equity_D1_mongod(db, start, end, sessionNum)
+			self._api.get_equity_D1_overlord(db, 'mongod',
+				start, end, sessionNum)
 		except Exception, e:
 			msg = '[MONGOD]: Unable to download data; ' + str(e)
 			raise VNPAST_DatabaseError(msg)
@@ -435,7 +514,8 @@ class MongodController(object):
 		"""
 		try:
 			db = self._dbs['FUT_D1']['self']
-			self._api.get_future_D1_mongod(db, start, end, sessionNum)
+			self._api.get_future_D1_overlord(db, 'mongod',
+				start, end, sessionNum)
 		except Exception, e:
 			msg = '[MONGOD]: Unable to download data; ' + str(e)
 			raise VNPAST_DatabaseError(msg)
@@ -446,7 +526,8 @@ class MongodController(object):
 		"""
 		try:
 			db = self._dbs['OPT_D1']['self']
-			self._api.get_option_D1_mongod(db, start, end, sessionNum)
+			self._api.get_option_D1_overlord(db, 'mongod',
+				start, end, sessionNum)
 		except Exception, e:
 			msg = '[MONGOD]: Unable to download data; ' + str(e)
 			raise VNPAST_DatabaseError(msg)
@@ -457,7 +538,8 @@ class MongodController(object):
 		"""
 		try:
 			db = self._dbs['IDX_D1']['self']
-			self._api.get_index_D1_mongod(db, start, end, sessionNum)
+			self._api.get_index_D1_overlord(db, 'mongod',
+				start, end, sessionNum)
 		except Exception, e:
 			msg = '[MONGOD]: Unable to download data; ' + str(e)
 			raise VNPAST_DatabaseError(msg)
@@ -468,7 +550,8 @@ class MongodController(object):
 		"""
 		try:
 			db = self._dbs['FUD_D1']['self']
-			self._api.get_fund_D1_mongod(db, start, end, sessionNum)
+			self._api.get_fund_D1_overlord(db, 'mongod',
+				start, end, sessionNum)
 		except Exception, e:
 			msg = '[MONGOD]: Unable to download data; ' + str(e)
 			raise VNPAST_DatabaseError(msg)
@@ -510,7 +593,7 @@ class MongodController(object):
 			end = datetime.strftime(datetime.now(), '%Y%m%d')
 
 			# then download.
-			target2(db, start, end, sessionNum)
+			target2(db, 'mongod', start, end, sessionNum)
 			return db
 			
 		except Exception, e:
@@ -524,7 +607,7 @@ class MongodController(object):
 		"""
 		db = self.__update(key = 'EQU_D1',
 					  	   target1 = self._allEquTickers,
-					  	   target2 = self._api.get_equity_D1_mongod,
+					  	   target2 = self._api.get_equity_D1_overlord,
 					  	   sessionNum = sessionNum)
 		return db
 
@@ -534,7 +617,7 @@ class MongodController(object):
 		"""
 		db = self.__update(key = 'FUT_D1',
 					  	   target1 = self._allFutTickers,
-					  	   target2 = self._api.get_future_D1_mongod,
+					  	   target2 = self._api.get_future_D1_overlord,
 					  	   sessionNum = sessionNum)
 		return db
 
@@ -544,7 +627,7 @@ class MongodController(object):
 		"""
 		db = self.__update(key = 'OPT_D1',
 					  	   target1 = self._allOptTickers,
-					  	   target2 = self._api.get_option_D1_mongod,
+					  	   target2 = self._api.get_option_D1_overlord,
 					  	   sessionNum = sessionNum)
 		return db
 
@@ -554,7 +637,7 @@ class MongodController(object):
 		"""
 		db = self.__update(key = 'IDX_D1',
 					  	   target1 = self._allIdxTickers,
-					  	   target2 = self._api.get_index_D1_mongod,
+					  	   target2 = self._api.get_index_D1_overlord,
 					  	   sessionNum = sessionNum)
 		return db
 
@@ -564,7 +647,7 @@ class MongodController(object):
 		"""
 		db = self.__update(key = 'FUD_D1',
 					  	   target1 = self._allFudTickers,
-					  	   target2 = self._api.get_fund_D1_mongod,
+					  	   target2 = self._api.get_fund_D1_overlord,
 					  	   sessionNum = sessionNum)
 		return db
 
@@ -589,7 +672,8 @@ class MongodController(object):
 			end = datetime.strftime(datetime.now(), '%Y%m%d')
 
 			# then download.
-			self._api.get_equity_D1_mongod(db, start, end, sessionNum)
+			self._api.get_equity_D1_overlord(db, 'mongod',
+				start, end, sessionNum)
 			
 		except Exception, e:
 			msg = '[MONGOD]: Unable to update data; ' + str(e)
@@ -644,14 +728,10 @@ class MongodController(object):
 				  'from MongoDB; '+ str(e)
 			return -1
 
-if __name__ == '__main__':
-	dc = DBConfig()
-	api = PyApi(Config())
-	mc = MongodController(dc, api)
-
-	mc.update_index_D1()
 
 
+
+	
 
 
 
